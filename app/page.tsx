@@ -6,6 +6,7 @@
 
 import HeroBanner from "@/components/HeroBanner";
 import CatalogLayout from "@/components/CatalogLayout";
+import VirtualTour from "@/components/VirtualTour";
 
 export default function HomePage() {
   return (
@@ -15,6 +16,9 @@ export default function HomePage() {
 
       {/* Catálogo: sidebar de filtros + banner multimedia + grid de productos */}
       <CatalogLayout />
+
+      {/* Tour Virtual 3D — se muestra justo antes del Footer */}
+      <VirtualTour />
     </main>
   );
 }
