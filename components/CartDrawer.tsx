@@ -4,9 +4,11 @@
 // Se abre al pulsar el botón del carrito en el header.
 // ──────────────────────────────────────────────────────────────────────────────
 
+import { useState, useEffect } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart-context";
+import AuthGateModal from "@/components/AuthGateModal";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
@@ -61,6 +63,28 @@ interface CartDrawerProps {
 
 export default function CartDrawer({ open, onClose }: CartDrawerProps) {
   const { items, totalItems, totalPrice, removeItem, incrementItem, decrementItem, clearCart } = useCart();
+  const [authGateOpen, setAuthGateOpen] = useState(false);
+  const router = useRouter();
+
+  // Bloquear scroll del body cuando el drawer está abierto
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
+
+  // Cuando el usuario resuelve la auth (o elige invitado), navegar al checkout
+  const handleAuthResolved = (guestEmail?: string) => {
+    setAuthGateOpen(false);
+    onClose();
+    const url = guestEmail
+      ? `/checkout?guest=${encodeURIComponent(guestEmail)}`
+      : "/checkout";
+    router.push(url);
+  };
 
   return (
     <>
@@ -207,14 +231,13 @@ export default function CartDrawer({ open, onClose }: CartDrawerProps) {
               <span className="font-medium text-emerald-600">Calculado al finalizar</span>
             </div>
 
-            {/* CTA */}
-            <Link
-              href="/checkout"
-              onClick={onClose}
+            {/* CTA — abre el modal de auth en lugar de navegar directo */}
+            <button
+              onClick={() => setAuthGateOpen(true)}
               className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 py-3.5 text-sm font-bold text-white shadow-md shadow-orange-200 transition-all hover:bg-orange-600 active:scale-95"
             >
-              Finalizar compra · Bs {totalPrice.toFixed(2)}
-            </Link>
+              Finalizar compra &middot; Bs {totalPrice.toFixed(2)}
+            </button>
 
             <button
               onClick={onClose}
@@ -225,6 +248,14 @@ export default function CartDrawer({ open, onClose }: CartDrawerProps) {
           </div>
         )}
       </div>
+
+      {/* ── AuthGateModal — se abre al presionar "Finalizar compra" ── */}
+      <AuthGateModal
+        open={authGateOpen}
+        onClose={() => setAuthGateOpen(false)}
+        onContinueAsGuest={(email) => handleAuthResolved(email)}
+        totalPrice={totalPrice}
+      />
     </>
   );
 }
