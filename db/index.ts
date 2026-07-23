@@ -30,9 +30,12 @@ const globalForDb = globalThis as unknown as {
 const client =
   globalForDb._postgresClient ??
   postgres(process.env.DATABASE_URL!, {
+    // SSL requerido por Supabase para conexiones remotas
+    ssl: "require",
     // pgbouncer en modo transacción: prepare=false es obligatorio
     prepare: false,
-    max: 10, // máximo de conexiones concurrentes
+    max: 10,
+    connect_timeout: 10,
   });
 
 if (process.env.NODE_ENV !== "production") {

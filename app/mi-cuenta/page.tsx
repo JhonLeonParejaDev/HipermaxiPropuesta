@@ -27,7 +27,7 @@ export default async function MiCuentaPage() {
   }
 
   const initials = user.fullName
-    ? user.fullName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+    ? user.fullName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
     : user.email.slice(0, 2).toUpperCase();
 
   const memberSince = new Intl.DateTimeFormat("es-BO", {

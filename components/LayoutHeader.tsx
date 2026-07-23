@@ -12,6 +12,7 @@ import { usePathname } from "next/navigation";
 import { useCart } from "@/lib/cart-context";
 import CartDrawer from "@/components/CartDrawer";
 import { PRODUCT_SECTIONS } from "@/lib/data";
+import { logout } from "@/app/actions/auth";
 import type { Product } from "@/components/types/product";
 
 // ─── Todos los productos (para búsqueda) ─────────────────────────────────────
@@ -148,7 +149,15 @@ function SearchBox() {
 
 // ─── Main LayoutHeader ────────────────────────────────────────────────────────
 
-export default function LayoutHeader() {
+export default function LayoutHeader({
+  isAuthenticated = false,
+  userFullName = null,
+  userEmail = null,
+}: {
+  isAuthenticated?: boolean;
+  userFullName?: string | null;
+  userEmail?: string | null;
+}) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const { totalItems } = useCart();
@@ -195,12 +204,45 @@ export default function LayoutHeader() {
 
             {/* ── Auth + Carrito ── */}
             <div className="flex flex-shrink-0 items-center gap-2">
-              <Link
-                href={`/login?redirect=${encodeURIComponent(pathname)}`}
-                className="hidden items-center gap-1.5 rounded-lg border border-slate-200 px-3.5 py-2 text-xs font-semibold text-slate-700 transition-all duration-150 hover:border-orange-400 hover:text-orange-600 sm:flex"
-              >
-                Iniciar sesión
-              </Link>
+
+              {/* Autenticado → avatar/nombre + acceso directo a Mi cuenta */}
+              {isAuthenticated ? (
+                <div className="hidden items-center gap-2 sm:flex">
+                  <Link
+                    href="/mi-cuenta"
+                    className="flex items-center gap-2 rounded-lg border border-orange-200 bg-orange-50 px-3.5 py-2 text-xs font-semibold text-orange-700 transition-all duration-150 hover:bg-orange-100"
+                  >
+                    <span className="flex size-6 items-center justify-center rounded-full bg-orange-500 text-[10px] font-bold text-white">
+                      {(userFullName ?? userEmail ?? "U")
+                        .split(" ")
+                        .map((n: string) => n[0])
+                        .join("")
+                        .toUpperCase()
+                        .slice(0, 2)}
+                    </span>
+                    <span className="max-w-[100px] truncate">
+                      {userFullName ?? userEmail?.split("@")[0] ?? "Mi cuenta"}
+                    </span>
+                  </Link>
+                  <form action={logout}>
+                    <button
+                      type="submit"
+                      className="rounded-lg border border-slate-200 px-2.5 py-2 text-xs font-medium text-slate-500 transition-all duration-150 hover:border-slate-300 hover:text-slate-700"
+                      aria-label="Cerrar sesión"
+                    >
+                      Salir
+                    </button>
+                  </form>
+                </div>
+              ) : (
+                /* No autenticado → link a login */
+                <Link
+                  href={`/login?redirect=${encodeURIComponent(pathname)}`}
+                  className="hidden items-center gap-1.5 rounded-lg border border-slate-200 px-3.5 py-2 text-xs font-semibold text-slate-700 transition-all duration-150 hover:border-orange-400 hover:text-orange-600 sm:flex"
+                >
+                  Iniciar sesión
+                </Link>
+              )}
 
               {/* Botón carrito */}
               <button
@@ -277,7 +319,7 @@ export default function LayoutHeader() {
       </header>
 
       {/* CartDrawer — fuera del header para evitar z-index issues */}
-      <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
+      <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} isAuthenticated={isAuthenticated} />
     </>
   );
 }

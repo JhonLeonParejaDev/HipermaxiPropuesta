@@ -2,32 +2,24 @@
 // ─── app/actions/auth.ts ──────────────────────────────────────────────────────
 // Server Actions de autenticación: login, signup, logout.
 //
-// Son funciones del servidor — nunca se exponen al bundle del cliente.
-// El cliente solo recibe un reference ID para llamarlas via POST.
-//
-// Patrón: FormData → Zod validate → DB query → createSession → redirect
+// PATRÓN CRÍTICO: redirect() DEBE estar fuera de cualquier try/catch,
+// ya que internamente lanza una excepción NEXT_REDIRECT.
 // ──────────────────────────────────────────────────────────────────────────────
 
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
-import { db } from "@/db";
-import { users, profiles } from "@/db/schema";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createSession, deleteSession } from "@/lib/session";
 import {
   LoginSchema,
   SignupSchema,
   type LoginFormState,
   type SignupFormState,
+  type SessionPayload,
 } from "@/lib/definitions";
 
 // ─── login ────────────────────────────────────────────────────────────────────
 
-/**
- * Server Action de inicio de sesión.
- * Uso con useActionState:
- *   const [state, action, pending] = useActionState(login, undefined)
- */
 export async function login(
   _prevState: LoginFormState,
   formData: FormData
@@ -44,48 +36,62 @@ export async function login(
 
   const { email, password } = validated.data;
 
-  // 2. Buscar usuario en la BD
-  let user;
+  // Variables para pasar entre try/catch y redirect (que debe ir fuera)
+  let userId: string | null = null;
+  let userRole: SessionPayload["role"] = "customer";
+
   try {
-    const result = await db
-      .select()
-      .from(users)
-      .where(eq(users.email, email))
-      .limit(1);
-    user = result[0];
-  } catch {
-    return { message: "Error de conexión. Intentá de nuevo." };
+    // 2. Buscar usuario en la BD via Supabase REST API
+    const { data: user, error: queryError } = await supabaseAdmin
+      .from("users")
+      .select("id, email, hashed_password, role")
+      .eq("email", email)
+      .maybeSingle(); // maybeSingle() no lanza error si no encuentra filas
+
+    if (queryError) {
+      console.error("[login] Error de DB:", queryError.message, queryError.code);
+      return { message: "Error de conexión. Intentá de nuevo en unos minutos." };
+    }
+
+    if (!user) {
+      // Mismo mensaje para usuario no encontrado — evita user enumeration
+      return { message: "Email o contraseña incorrectos." };
+    }
+
+    // 3. Verificar contraseña con bcrypt
+    const passwordMatch = await bcrypt.compare(
+      password,
+      user.hashed_password as string
+    );
+
+    if (!passwordMatch) {
+      return { message: "Email o contraseña incorrectos." };
+    }
+
+    // 4. Crear sesión JWT en cookie HttpOnly
+    await createSession(user.id as string, user.role as SessionPayload["role"]);
+
+    userId = user.id as string;
+    userRole = user.role as SessionPayload["role"];
+
+    console.log(`[login] ✅ Usuario autenticado: ${email} (${userId})`);
+  } catch (err) {
+    // Cualquier error inesperado → devolver mensaje al cliente
+    console.error("[login] Error inesperado:", err);
+    return { message: "Error interno del servidor. Intentá de nuevo." };
   }
 
-  // 3. Verificar que el usuario existe y la contraseña es correcta
-  // Usamos el mismo mensaje genérico para ambos casos (evita user enumeration)
-  if (!user) {
-    return { message: "Email o contraseña incorrectos." };
-  }
-
-  const passwordMatch = await bcrypt.compare(password, user.hashedPassword);
-  if (!passwordMatch) {
-    return { message: "Email o contraseña incorrectos." };
-  }
-
-  // 4. Crear sesión JWT en cookie HttpOnly
-  await createSession(user.id, user.role);
-
-  // 5. Redirigir — redirect() lanza una excepción interna de Next.js,
-  //    debe ir FUERA de try/catch para no ser capturada accidentalmente
+  // 5. Redirigir — FUERA del try/catch para que Next.js lo maneje correctamente
   redirect("/");
 }
 
 // ─── signup ───────────────────────────────────────────────────────────────────
 
-/**
- * Server Action de registro de nuevo usuario.
- */
 export async function signup(
   _prevState: SignupFormState,
   formData: FormData
 ): Promise<SignupFormState> {
-  // 1. Validar campos con Zod
+  // 1. Validar con Zod
   const validated = SignupSchema.safeParse({
     fullName: formData.get("fullName"),
     email: formData.get("email"),
@@ -99,59 +105,77 @@ export async function signup(
 
   const { fullName, email, password } = validated.data;
 
-  // 2. Verificar que el email no exista ya
   try {
-    const existing = await db
-      .select({ id: users.id })
-      .from(users)
-      .where(eq(users.email, email))
-      .limit(1);
+    // 2. Verificar que el email no exista ya
+    const { data: existing, error: checkError } = await supabaseAdmin
+      .from("users")
+      .select("id")
+      .eq("email", email)
+      .maybeSingle();
 
-    if (existing.length > 0) {
+    if (checkError) {
+      console.error("[signup] Error al verificar email:", checkError.message);
+      return { message: "Error de conexión. Intentá de nuevo." };
+    }
+
+    if (existing) {
       return {
         errors: { email: ["Este email ya está registrado. Iniciá sesión."] },
       };
     }
-  } catch {
-    return { message: "Error de conexión. Intentá de nuevo." };
+
+    // 3. Hash de contraseña (bcrypt factor 12)
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    // 4. Insertar usuario
+    const { data: newUser, error: userError } = await supabaseAdmin
+      .from("users")
+      .insert({
+        email,
+        hashed_password: hashedPassword,
+        role: "customer",
+      })
+      .select("id, role")
+      .single();
+
+    if (userError || !newUser) {
+      console.error("[signup] Error al crear usuario:", userError?.message);
+      return { message: "Error al crear la cuenta. Intentá de nuevo." };
+    }
+
+    // 5. Insertar perfil (no bloqueante — el usuario ya existe aunque falle el perfil)
+    const { error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .insert({ id: newUser.id, full_name: fullName });
+
+    if (profileError) {
+      console.error("[signup] Error al crear perfil:", profileError.message);
+      // Continuamos — el usuario puede completar su perfil después
+    }
+
+    // 6. Crear sesión JWT
+    await createSession(
+      newUser.id as string,
+      newUser.role as SessionPayload["role"]
+    );
+
+    console.log(`[signup] ✅ Usuario registrado: ${email} (${newUser.id})`);
+  } catch (err) {
+    console.error("[signup] Error inesperado:", err);
+    return { message: "Error interno del servidor. Intentá de nuevo." };
   }
 
-  // 3. Hash de la contraseña (bcrypt, factor 12)
-  const hashedPassword = await bcrypt.hash(password, 12);
-
-  // 4. Insertar usuario y perfil en una transacción
-  let newUser;
-  try {
-    newUser = await db.transaction(async (tx) => {
-      const [user] = await tx
-        .insert(users)
-        .values({ email, hashedPassword, role: "customer" })
-        .returning({ id: users.id, role: users.role });
-
-      // Crear perfil asociado
-      await tx.insert(profiles).values({
-        id: user.id,
-        fullName,
-      });
-
-      return user;
-    });
-  } catch {
-    return { message: "Error al crear la cuenta. Intentá de nuevo." };
-  }
-
-  // 5. Crear sesión y redirigir
-  await createSession(newUser.id, newUser.role);
+  // 7. Redirigir — FUERA del try/catch
   redirect("/");
 }
 
 // ─── logout ───────────────────────────────────────────────────────────────────
 
-/**
- * Server Action de cierre de sesión.
- * Llamar desde un <form action={logout}> o startTransition.
- */
 export async function logout(): Promise<void> {
-  await deleteSession();
+  try {
+    await deleteSession();
+  } catch (err) {
+    console.error("[logout] Error al eliminar sesión:", err);
+  }
   redirect("/login");
 }

@@ -1,14 +1,16 @@
 import type { Config } from "drizzle-kit";
-import { config } from "dotenv";
 
-// Cargar .env.local explícitamente para que drizzle-kit lo encuentre
+// drizzle-kit no carga .env.local automáticamente — lo hacemos manualmente
+import { config } from "dotenv";
 config({ path: ".env.local" });
 
-const connectionString =
+const connectionUrl =
   process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL;
 
-if (!connectionString) {
-  throw new Error("DATABASE_URL no está configurado en .env.local");
+if (!connectionUrl) {
+  throw new Error(
+    "DATABASE_URL no está definido. Verificá que .env.local existe y tiene DATABASE_URL."
+  );
 }
 
 export default {
@@ -16,8 +18,9 @@ export default {
   out: "./db/migrations",
   dialect: "postgresql",
   dbCredentials: {
-    url: connectionString,
+    url: connectionUrl,
+    ssl: true,
   },
   verbose: true,
-  strict: false,
+  strict: false, // false en push para no pedir confirmación interactiva
 } satisfies Config;

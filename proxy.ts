@@ -1,17 +1,13 @@
-// ─── middleware.ts ────────────────────────────────────────────────────────────
-// Middleware de Next.js — protección de rutas via sesión JWT.
+// ─── proxy.ts ─────────────────────────────────────────────────────────────────
+// Proxy de Next.js 16 — protección de rutas via sesión JWT.
+// Archivo renombrado desde middleware.ts (deprecado en Next.js 16).
 //
-// IMPORTANTE: El middleware corre en el Edge Runtime.
-// Por eso solo leemos el JWT de la cookie (decrypt con jose, Edge-compatible).
-// NUNCA hacer queries a la BD aquí — es demasiado lento y no es Edge-compatible.
-//
-// Patrón: "optimistic checks" — verificar el JWT (rápido) en middleware,
-// y hacer la verificación real contra la BD dentro de cada Server Action o
-// en el Server Component via getUser() del DAL.
+// IMPORTANTE: Corre en Edge Runtime — NO hacer queries a la BD aquí.
+// Solo verificar el JWT de la cookie (decrypt con jose, Edge-compatible).
 // ──────────────────────────────────────────────────────────────────────────────
 
 import { type NextRequest, NextResponse } from "next/server";
-import { decrypt, SESSION_COOKIE } from "@/lib/session";
+import { decrypt, SESSION_COOKIE } from "@/lib/session-edge";
 
 // ─── Configuración de rutas ───────────────────────────────────────────────────
 
@@ -19,19 +15,17 @@ import { decrypt, SESSION_COOKIE } from "@/lib/session";
 const PROTECTED_ROUTES = [
   "/checkout",
   "/mi-cuenta",
-  "/mi-cuenta/pedidos",
   "/admin",
 ];
 
 /** Rutas que redirigen al inicio si el usuario YA está autenticado */
 const AUTH_ONLY_ROUTES = ["/login", "/registro"];
 
-// ─── Middleware ───────────────────────────────────────────────────────────────
+// ─── Función proxy (nombre requerido por Next.js 16) ─────────────────────────
 
-export default async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Verificar si la ruta actual coincide con las protegidas/auth-only
   const isProtectedRoute = PROTECTED_ROUTES.some(
     (route) => pathname === route || pathname.startsWith(route + "/")
   );
@@ -52,12 +46,11 @@ export default async function middleware(req: NextRequest) {
   }
 
   // ── Ruta de auth con sesión activa → redirigir a inicio ──
-  // (evita que un usuario logueado vea la pantalla de login)
   if (isAuthOnlyRoute && isAuthenticated) {
     return NextResponse.redirect(new URL("/", req.url));
   }
 
-  // ── Ruta de admin sin rol admin → 403 ──
+  // ── Rutas de admin sin rol admin → redirigir a inicio ──
   if (pathname.startsWith("/admin") && session?.role !== "admin") {
     return NextResponse.redirect(new URL("/", req.url));
   }
@@ -66,7 +59,6 @@ export default async function middleware(req: NextRequest) {
 }
 
 // ─── Matcher ──────────────────────────────────────────────────────────────────
-// Excluir archivos estáticos, imágenes de Next.js y API routes del middleware.
 
 export const config = {
   matcher: [
