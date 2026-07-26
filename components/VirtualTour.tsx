@@ -150,7 +150,7 @@ export default function VirtualTour() {
 
         {/* ── CTA Google Maps ── */}
         <p className="mt-6 text-center text-sm text-zinc-400">
-          ¿Preferís venir en persona?{" "}
+          ¿Prefieres venir en persona?{" "}
           <a
             href="https://maps.google.com/?q=Hipermaxi+Juan+de+la+Rosa+Cochabamba"
             target="_blank"
