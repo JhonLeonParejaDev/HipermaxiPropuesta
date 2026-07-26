@@ -7,6 +7,8 @@
 import { useState } from "react";
 import Image from "next/image";
 import type { Product } from "@/components/types/product";
+import { useCart } from "@/lib/cart-context";
+import { useToast } from "@/components/ToastProvider";
 
 // ──── Utility: format Bolivian price ──────────────────────────────────────────
 function formatPrice(price: number): string {
@@ -26,27 +28,25 @@ function getBadgeStyle(badge: string): string {
 }
 
 // ──── Add-to-cart button ───────────────────────────────────────────────────────
+// Receives the full product so it can dispatch to CartContext and show a toast.
 function AddToCartButton({
-  productId,
-  inStock,
+  product,
 }: {
-  productId: string;
-  inStock: boolean;
+  product: Product;
 }) {
   const [added, setAdded] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const { addItem } = useCart();
+  const { showToast } = useToast();
 
-  const handleClick = async () => {
-    if (!inStock || loading || added) return;
-    setLoading(true);
-    // Simulate async cart mutation — replace with real server action / API call
-    await new Promise((r) => setTimeout(r, 450));
-    setLoading(false);
+  const handleClick = () => {
+    if (!product.inStock || added) return;
+    addItem(product);
+    showToast(`${product.name} agregado al carrito`, "success");
     setAdded(true);
     setTimeout(() => setAdded(false), 2200);
   };
 
-  if (!inStock) {
+  if (!product.inStock) {
     return (
       <div className="flex h-9 items-center justify-center rounded-xl border border-zinc-200 text-xs font-medium text-zinc-400">
         Sin stock
@@ -56,14 +56,13 @@ function AddToCartButton({
 
   return (
     <button
-      id={`add-to-cart-${productId}`}
+      id={`add-to-cart-${product.id}`}
       onClick={handleClick}
-      disabled={loading}
       aria-label={added ? "Producto agregado" : "Agregar al carrito"}
       className={`
         relative flex h-9 w-full items-center justify-center gap-1.5 overflow-hidden
         rounded-xl text-xs font-semibold transition-all duration-200
-        active:scale-95 disabled:cursor-wait
+        active:scale-95
         ${
           added
             ? "bg-emerald-500 text-white shadow-emerald-200 shadow-sm"
@@ -71,22 +70,7 @@ function AddToCartButton({
         }
       `}
     >
-      {loading ? (
-        <svg
-          className="size-4 animate-spin"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2.5}
-          aria-hidden="true"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M12 3v3m0 12v3M3 12h3m12 0h3"
-          />
-        </svg>
-      ) : added ? (
+      {added ? (
         <>
           <svg
             className="size-3.5"
@@ -214,7 +198,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         </div>
 
         {/* CTA */}
-        <AddToCartButton productId={product.id} inStock={product.inStock} />
+        <AddToCartButton product={product} />
       </div>
     </article>
   );

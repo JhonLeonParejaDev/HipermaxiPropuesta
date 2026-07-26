@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import LayoutHeader from "@/components/LayoutHeader";
+import HeaderWrapper from "@/components/HeaderWrapper";
 import LayoutFooter from "@/components/LayoutFooter";
 import CountdownBanner from "@/components/CountdownBanner";
 import WhatsAppButton from "@/components/WhatsAppButton";
@@ -56,7 +56,7 @@ export default function RootLayout({
          */}
         <CartProvider>
           <ToastProvider>
-            <LayoutHeader />
+            <HeaderWrapper />
             <CountdownBanner />
             {children}
             <LayoutFooter />
