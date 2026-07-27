@@ -248,6 +248,8 @@ export default function CheckoutClient({
             productName: i.product.name,
             quantity: i.quantity,
             unitPrice: i.product.price,
+            imageUrl: i.product.imageUrl,
+            brand: i.product.brand,
           })))} />
           <input type="hidden" name="subtotal" value={totalPrice.toFixed(2)} />
           <input type="hidden" name="shippingCost" value={shippingCost.toFixed(2)} />
