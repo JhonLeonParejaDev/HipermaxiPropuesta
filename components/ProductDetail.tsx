@@ -178,6 +178,27 @@ export default function ProductDetail({ product, related }: ProductDetailProps) 
     setAdding(false);
   };
 
+  const handleShare = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    const productUrl = `${window.location.origin}/productos/${product.slug}`;
+    const shareData = {
+      title: `Hipermaxi - ${product.name}`,
+      text: `¡Mira este producto que encontré en Hipermaxi: ${product.name}!`,
+      url: productUrl,
+    };
+
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        console.error("Interacción cancelada o error al compartir:", err);
+      }
+    } else {
+      await navigator.clipboard.writeText(productUrl);
+      showToast("Enlace copiado al portapapeles", "info");
+    }
+  };
+
   const savings = product.originalPrice
     ? product.originalPrice * qty - product.price * qty
     : 0;
@@ -234,10 +255,21 @@ export default function ProductDetail({ product, related }: ProductDetailProps) 
             {product.brand}
           </p>
 
-          {/* Nombre */}
-          <h1 className="mt-2 text-2xl font-extrabold leading-tight text-slate-900 sm:text-3xl">
-            {product.name}
-          </h1>
+          {/* Nombre & Botón Compartir */}
+          <div className="mt-2 flex items-start justify-between gap-4">
+            <h1 className="text-2xl font-extrabold leading-tight text-slate-900 sm:text-3xl">
+              {product.name}
+            </h1>
+            <button
+              onClick={handleShare}
+              aria-label="Compartir producto"
+              className="mt-1 flex shrink-0 items-center justify-center rounded-full bg-slate-100 p-2.5 text-slate-500 transition-colors hover:bg-slate-200 hover:text-blue-600"
+            >
+              <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
+              </svg>
+            </button>
+          </div>
 
           {/* Precio */}
           <div className="mt-5 flex items-end gap-3">

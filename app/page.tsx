@@ -1,3 +1,5 @@
+"use client";
+
 // ─── app/page.tsx ─────────────────────────────────────────────────────────────
 // Home page — estructura fiel al wireframe:
 //   1. HeroBanner  : Carrusel dentro del contenedor central
@@ -6,7 +8,16 @@
 
 import HeroBanner from "@/components/HeroBanner";
 import CatalogLayout from "@/components/CatalogLayout";
-import VirtualTour from "@/components/VirtualTour";
+import dynamic from "next/dynamic";
+
+const VirtualTour = dynamic(() => import("@/components/VirtualTour"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-[500px] w-full animate-pulse items-center justify-center rounded-2xl bg-zinc-100 text-zinc-400">
+      <p className="font-medium">Cargando experiencia 3D de Hipermaxi...</p>
+    </div>
+  ),
+});
 
 export default function HomePage() {
   return (

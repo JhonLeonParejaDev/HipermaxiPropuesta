@@ -119,6 +119,28 @@ interface ProductCardProps {
 export default function ProductCard({ product }: ProductCardProps) {
   const hasBadge = Boolean(product.badge || product.isNew);
   const badgeLabel = product.badge ?? (product.isNew ? "Nuevo" : null);
+  const { showToast } = useToast();
+
+  const handleShare = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    const productUrl = `${window.location.origin}/producto/${product.id}`;
+    const shareData = {
+      title: `Hipermaxi - ${product.name}`,
+      text: `¡Mira este producto que encontré en Hipermaxi: ${product.name}!`,
+      url: productUrl,
+    };
+
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        console.error("Interacción cancelada o error al compartir:", err);
+      }
+    } else {
+      await navigator.clipboard.writeText(productUrl);
+      showToast("Enlace copiado al portapapeles", "info");
+    }
+  };
 
   return (
     <article
@@ -161,6 +183,17 @@ export default function ProductCard({ product }: ProductCardProps) {
           loading="lazy"
           quality={75}
         />
+        
+        {/* Share Button (Superpuesto en la imagen, inferior derecha) */}
+        <button
+          onClick={handleShare}
+          aria-label="Compartir producto"
+          className="absolute bottom-3 right-3 z-20 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-zinc-600 shadow backdrop-blur-sm transition-all hover:bg-white hover:text-blue-600 hover:scale-110"
+        >
+          <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
+          </svg>
+        </button>
       </div>
 
       {/* ── Card body ── */}
