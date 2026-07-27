@@ -12,12 +12,13 @@ import CategoryPageClient from "@/components/CategoryPageClient";
 
 export function generateStaticParams() {
   // Los slugs de URL usados en el nav deben coincidir con CATEGORIES[].id
-  // También soportamos los alias de URL (frutas-verduras → frutas, etc.)
+  // También soportamos los alias de URL (frutas-verduras → frutas, abarrotes → supermercado, etc.)
   const directIds = CATEGORIES.map((c) => ({ cat: c.id }));
-  // Alias para los slugs que el nav usa con guión
+  // Alias para los slugs que el nav usa con guión o sinónimos
   const aliases = [
     { cat: "frutas-verduras" },
     { cat: "abarrotes" },
+    { cat: "supermercado" },
   ];
   return [...directIds, ...aliases];
 }
@@ -26,8 +27,10 @@ export function generateStaticParams() {
 
 /** Normaliza el slug de URL al category id interno */
 function resolveCategory(cat: string) {
-  if (cat === "frutas-verduras") return "frutas";
-  return cat;
+  const normalized = cat.toLowerCase();
+  if (normalized === "frutas-verduras") return "frutas";
+  if (normalized === "abarrotes" || normalized === "supermercado") return "supermercado";
+  return normalized;
 }
 
 // ─── generateMetadata ─────────────────────────────────────────────────────────

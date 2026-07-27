@@ -9,8 +9,8 @@ import type { Product, ProductSection, Category } from "@/components/types/produ
 export const CATEGORIES: Category[] = [
   {
     id: "supermercado",
-    label: "Supermercado",
-    href: "/categoria/supermercado",
+    label: "Abarrotes",
+    href: "/categoria/abarrotes",
     icon: "🛒",
     color: "bg-blue-50",
     accentColor: "text-blue-600",
