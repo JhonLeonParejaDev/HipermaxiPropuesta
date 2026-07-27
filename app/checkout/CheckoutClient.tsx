@@ -170,8 +170,9 @@ export default function CheckoutClient({
   userPhone,
   guestEmail,
 }: CheckoutClientProps) {
-  const { items, totalPrice, totalItems } = useCart();
+  const { items, totalPrice, totalItems, clearCart } = useCart();
   const router = useRouter();
+  const [orderProcessed, setOrderProcessed] = useState(false);
 
   // ── Form state ──
   const [deliveryType, setDeliveryType] = useState<"delivery" | "pickup">("delivery");
@@ -181,19 +182,26 @@ export default function CheckoutClient({
   // ── Server Action state ──
   const [state, action, pending] = useActionState(placeOrder, undefined);
 
-  // ── Si el carrito está vacío, redirigir ──
+  // ── Si el carrito está vacío y no se está procesando un pedido, redirigir ──
   useEffect(() => {
-    if (totalItems === 0) {
+    if (totalItems === 0 && !state?.orderId && !orderProcessed) {
       router.push("/");
     }
-  }, [totalItems, router]);
+  }, [totalItems, state?.orderId, orderProcessed, router]);
 
-  // ── Si el pedido fue exitoso, redirigir a confirmación ──
+  // ── Si el pedido fue exitoso, limpiar carrito y redirigir a confirmación ──
   useEffect(() => {
-    if (state?.orderId) {
-      router.push(`/pedido/${state.orderId}`);
+    if (state?.orderId && !orderProcessed) {
+      setOrderProcessed(true);
+      clearCart();
+      const params = new URLSearchParams();
+      if (state.total) params.set("total", state.total);
+      if (state.itemsCount) params.set("items", state.itemsCount.toString());
+      if (state.deliveryType) params.set("type", state.deliveryType);
+      const query = params.toString() ? `?${params.toString()}` : "";
+      router.push(`/pedido/${state.orderId}${query}`);
     }
-  }, [state?.orderId, router]);
+  }, [state, orderProcessed, clearCart, router]);
 
   const email = userEmail ?? guestEmail ?? "";
   const shippingCost = deliveryType === "pickup" ? 0 : totalPrice >= 200 ? 0 : 20;
@@ -232,7 +240,7 @@ export default function CheckoutClient({
       <div className="grid gap-8 lg:grid-cols-[1fr_400px]">
 
         {/* ═══════════════════════════════════ FORMULARIO ════════════════════════════ */}
-        <form action={action} className="space-y-6">
+        <form id="checkout-form" action={action} className="space-y-6">
 
           {/* Campos ocultos para el Server Action */}
           <input type="hidden" name="items" value={JSON.stringify(items.map(i => ({
@@ -508,10 +516,6 @@ export default function CheckoutClient({
             type="submit"
             form="checkout-form"
             disabled={pending}
-            onClick={() => {
-              const form = document.querySelector("form");
-              if (form) form.requestSubmit();
-            }}
             className="mt-4 hidden w-full items-center justify-center gap-2 rounded-xl bg-orange-500 py-4 text-sm font-bold text-white shadow-md shadow-orange-200 transition-all hover:bg-orange-600 active:scale-[0.98] disabled:cursor-wait disabled:opacity-70 lg:flex"
           >
             {pending ? (

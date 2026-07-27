@@ -20,6 +20,9 @@ export interface OrderFormState {
   };
   message?: string;
   orderId?: string;
+  total?: string;
+  itemsCount?: number;
+  deliveryType?: string;
 }
 
 // ─── Schema de validación ─────────────────────────────────────────────────────
@@ -121,7 +124,19 @@ export async function placeOrder(
   //   notes: [data.notes, `Pago: ${data.paymentMethod}`, `Horario: ${data.horario}`].filter(Boolean).join(' | '),
   // });
 
-  // 5. Redirigir a página de confirmación — devolvemos el orderId para que
+  // 5. Redirigir a página de confirmación — devolvemos los datos del pedido para que
   //    el cliente haga la navegación (useEffect en CheckoutClient)
-  return { orderId };
+  let itemsCount = 0;
+  try {
+    itemsCount = JSON.parse(data.items || "[]").length;
+  } catch {
+    itemsCount = 0;
+  }
+
+  return {
+    orderId,
+    total: data.total,
+    itemsCount,
+    deliveryType: data.deliveryType,
+  };
 }
