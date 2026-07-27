@@ -57,11 +57,12 @@ function IconCart() {
 interface CartDrawerProps {
   open: boolean;
   onClose: () => void;
+  isAuthenticated?: boolean;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function CartDrawer({ open, onClose }: CartDrawerProps) {
+export default function CartDrawer({ open, onClose, isAuthenticated = false }: CartDrawerProps) {
   const { items, totalItems, totalPrice, removeItem, incrementItem, decrementItem, clearCart } = useCart();
   const [authGateOpen, setAuthGateOpen] = useState(false);
   const router = useRouter();
@@ -75,6 +76,16 @@ export default function CartDrawer({ open, onClose }: CartDrawerProps) {
     }
     return () => { document.body.style.overflow = ""; };
   }, [open]);
+
+  // Manejador de "Finalizar compra": si el usuario ya inició sesión, redirigir directo
+  const handleCheckout = () => {
+    if (isAuthenticated) {
+      onClose();
+      router.push("/checkout");
+    } else {
+      setAuthGateOpen(true);
+    }
+  };
 
   // Cuando el usuario resuelve la auth (o elige invitado), navegar al checkout
   const handleAuthResolved = (guestEmail?: string) => {
@@ -231,9 +242,9 @@ export default function CartDrawer({ open, onClose }: CartDrawerProps) {
               <span className="font-medium text-emerald-600">Calculado al finalizar</span>
             </div>
 
-            {/* CTA — abre el modal de auth en lugar de navegar directo */}
+            {/* CTA — redirige a /checkout si está autenticado o abre el modal de auth */}
             <button
-              onClick={() => setAuthGateOpen(true)}
+              onClick={handleCheckout}
               className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 py-3.5 text-sm font-bold text-white shadow-md shadow-orange-200 transition-all hover:bg-orange-600 active:scale-95"
             >
               Finalizar compra &middot; Bs {totalPrice.toFixed(2)}
