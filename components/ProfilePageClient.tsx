@@ -403,8 +403,8 @@ function HighlightsCarousel({ darkMode = false }: { darkMode?: boolean }) {
       <div className="relative flex items-center gap-2">
         <button onClick={() => setOffset(o => Math.max(0, o - 1))} disabled={offset === 0}
           className={`flex-shrink-0 flex size-8 sm:size-9 items-center justify-center rounded-full border shadow-sm transition-all disabled:opacity-30 ${darkMode
-              ? "border-slate-700 bg-[#1e293b] text-slate-300 hover:border-orange-500 hover:text-orange-400"
-              : "border-slate-200 bg-white text-slate-500 hover:border-orange-300 hover:text-orange-500"
+            ? "border-slate-700 bg-[#1e293b] text-slate-300 hover:border-orange-500 hover:text-orange-400"
+            : "border-slate-200 bg-white text-slate-500 hover:border-orange-300 hover:text-orange-500"
             }`}
           aria-label="Anterior">
           <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
@@ -419,8 +419,8 @@ function HighlightsCarousel({ darkMode = false }: { darkMode?: boolean }) {
         </div>
         <button onClick={() => setOffset(o => Math.min(maxOffset, o + 1))} disabled={offset >= maxOffset}
           className={`flex-shrink-0 flex size-8 sm:size-9 items-center justify-center rounded-full border shadow-sm transition-all disabled:opacity-30 ${darkMode
-              ? "border-slate-700 bg-[#1e293b] text-slate-300 hover:border-orange-500 hover:text-orange-400"
-              : "border-slate-200 bg-white text-slate-500 hover:border-orange-300 hover:text-orange-500"
+            ? "border-slate-700 bg-[#1e293b] text-slate-300 hover:border-orange-500 hover:text-orange-400"
+            : "border-slate-200 bg-white text-slate-500 hover:border-orange-300 hover:text-orange-500"
             }`}
           aria-label="Siguiente">
           <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
@@ -516,8 +516,8 @@ function RecetaSemanal({ darkMode = false }: { darkMode?: boolean }) {
           {INGREDIENTS.map(ing => (
             <Link key={ing.name} href={ing.href}
               className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all duration-150 ${darkMode
-                  ? "border-teal-800/60 bg-teal-950/50 text-teal-300 hover:bg-teal-900/60 hover:border-teal-500"
-                  : "border-teal-100 bg-teal-50 text-teal-700 hover:bg-teal-100 hover:border-teal-300 hover:scale-105"
+                ? "border-teal-800/60 bg-teal-950/50 text-teal-300 hover:bg-teal-900/60 hover:border-teal-500"
+                : "border-teal-100 bg-teal-50 text-teal-700 hover:bg-teal-100 hover:border-teal-300 hover:scale-105"
                 }`}>
               <span>{ing.icon}</span>{ing.name}
             </Link>
@@ -648,8 +648,8 @@ export default function ProfilePageClient({ initials, fullName, email, memberSin
           <button
             onClick={toggleDarkMode}
             className={`flex items-center gap-1.5 sm:gap-2 rounded-full border px-3 sm:px-3.5 py-1.5 text-xs font-semibold shadow-sm transition-all duration-200 ${darkMode
-                ? "border-slate-700 bg-[#1e293b] text-amber-300 hover:border-amber-400/50 hover:bg-slate-800"
-                : "border-slate-200 bg-white text-slate-700 hover:border-orange-300 hover:bg-orange-50"
+              ? "border-slate-700 bg-[#1e293b] text-amber-300 hover:border-amber-400/50 hover:bg-slate-800"
+              : "border-slate-200 bg-white text-slate-700 hover:border-orange-300 hover:bg-orange-50"
               }`}
             aria-label={darkMode ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
           >
@@ -702,8 +702,8 @@ export default function ProfilePageClient({ initials, fullName, email, memberSin
           <form action={logout}>
             <button type="submit"
               className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all duration-200 ${darkMode
-                  ? "border-slate-800 bg-[#1e293b]/60 text-slate-400 hover:border-red-800/80 hover:bg-red-950/40 hover:text-red-400"
-                  : "border-slate-200 bg-white text-slate-500 hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                ? "border-slate-800 bg-[#1e293b]/60 text-slate-400 hover:border-red-800/80 hover:bg-red-950/40 hover:text-red-400"
+                : "border-slate-200 bg-white text-slate-500 hover:border-red-200 hover:bg-red-50 hover:text-red-600"
                 }`}>
               <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
